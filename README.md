@@ -19,10 +19,10 @@ Relative is a Clojure library that supports relative rating systems such as Elo 
 (rating player1) ;; => 1500
 
 ;; player1 wins the first match.
-(match elo-engine player1 player2) ;; => [1516.0 1484.0]
+(match! elo-engine player1 player2) ;; => [1516.0 1484.0]
 
 (rating player1) ;; => 1516.0
 
 ;; player2 wins the second match.
-(match elo-engine player2 player1) ;; => [1501.4695 1498.5305]
+(match! elo-engine player2 player1) ;; => [1501.4695 1498.5305]
 ```
