@@ -1,5 +1,6 @@
 (ns relative.elo
-  (:require relative.rating))
+  (:use [relative.rating :only [IRelativeRatedPlayer
+                                IRelativeRatingEngine]]))
 
 ;; Elo Rating (based on 1500 average)
 ;;
@@ -23,10 +24,6 @@
 ;;        where K is the maximum possible adjustment per game
 ;;
 
-(defprotocol IEloPlayer
-  (rating [_])
-  (update! [_ rating]))
-
 (defn q
   "Q score based on average 1500 rating."
   [rating]
@@ -46,10 +43,16 @@
   [rating actual expected k-factor]
   (+ rating (* k-factor (- actual expected))))
 
+(defprotocol IEloPlayer
+  (rating [_])
+  (update! [_ rating]))
+
 (defrecord EloPlayer [id rating-atom]
   IEloPlayer
-  (rating [_] @rating-atom)
-  (update! [_ rating] (reset! rating-atom rating)))
+  (update! [_ rating] (reset! rating-atom rating))
+
+  IRelativeRatedPlayer
+  (rating [_] @rating-atom))
 
 (defn player
   "Returns a new EloPlayer with a default rating of 1500."
@@ -64,7 +67,7 @@
   [{:keys [id seed]}]
   (player id (or seed 1500)))
 
-(defn -match
+(defn -match!
   "Accepts two EloPlayers and updates their Elo ratings based
   on the result of the match.
 
@@ -84,10 +87,10 @@
     [(rating winner) (rating loser)]))
 
 (deftype EloEngine [k-factor]
-  relative.rating.IRelativeRatingEngine
+  IRelativeRatingEngine
   (map->player [_ player-map] (-map->player player-map))
-  (match [_ winner loser] (-match winner loser false k-factor))
-  (match [_ winner loser draw?] (-match winner loser draw? k-factor)))
+  (match! [_ winner loser] (-match! winner loser false k-factor))
+  (match! [_ winner loser draw?] (-match! winner loser draw? k-factor)))
 
 (defn elo-engine
   ([] (elo-engine 32))
