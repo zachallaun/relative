@@ -1,13 +1,28 @@
-# relative
+# Relative
 
-A Clojure library designed to ... well, that part is up to you.
+Relative is a Clojure library that supports relative rating systems such as Elo or Glicko. (Currently only the Elo rating system is implemented.)
 
-## Usage
+### Basic Use
 
-FIXME
+```clj
+(ns elo-example
+  (:require [relative.elo :as elo])
+  (:use relative.rating))
 
-## License
+;; We'll use the Elo engine
+(def elo-engine (elo/elo-engine))
 
-Copyright © 2012 FIXME
+;; Create two players with default ratings of 1500.
+(def player1 (map->player elo-engine {:id "Zach"}))
+(def player2 (map->player elo-engine {:id "Nick"}))
 
-Distributed under the Eclipse Public License, the same as Clojure.
+(rating player1) ;; => 1500
+
+;; player1 wins the first match.
+(match elo-engine player1 player2) ;; => [1516.0 1484.0]
+
+(rating player1) ;; => 1516.0
+
+;; player2 wins the second match.
+(match elo-engine player2 player1) ;; => [1501.4695 1498.5305]
+```

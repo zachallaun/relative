@@ -44,7 +44,7 @@
   "Returns a new rating given an old rating, an actual score,
   an expected score, and a k-factor."
   [rating actual expected k-factor]
-  (+ rating (* *k-factor* (- actual expected))))
+  (+ rating (* k-factor (- actual expected))))
 
 (defrecord EloPlayer [id rating-atom]
   IEloPlayer
