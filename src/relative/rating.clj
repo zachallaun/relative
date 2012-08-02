@@ -6,7 +6,8 @@
     player-map keys:
 
     id:   (required) A unique identifier for the player.
-    seed: (optional) A seed rating for the player.")
+    seed: (optional) A seed rating for the player.
+    opts: (optional) A map of options.")
 
   (match! [_ winner loser] [_ winner loser draw?]
     "winner and loser should be Player data objects, and match!
