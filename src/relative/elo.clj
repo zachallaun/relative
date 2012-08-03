@@ -88,9 +88,24 @@
 
 (deftype EloEngine [k-factor]
   IRelativeRatingEngine
-  (map->player [_ player-map] (-map->player player-map))
-  (match! [_ winner loser] (-match! winner loser false k-factor))
-  (match! [_ winner loser draw?] (-match! winner loser draw? k-factor)))
+  (map->player [_ player-map]
+    (-map->player player-map))
+
+  (match! [_ winner loser]
+    (-match! winner loser false k-factor))
+  (match! [_ winner loser draw?]
+    (-match! winner loser draw? k-factor))
+
+  (serialize [_ entities]
+    (->> entities
+         (map (fn [e] {:id (:id e) :seed (rating e)}))
+         vec
+         prn-str))
+
+  (resurrect [engine serialized]
+    (->> serialized
+         read-string
+         (map -map->player))))
 
 (defn elo-engine
   ([] (elo-engine 32))
