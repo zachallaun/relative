@@ -1,6 +1,5 @@
 (ns relative.elo
-  (:use [relative.rating :only [IRelativeRatedPlayer
-                                IRelativeRatingEngine]]))
+  (:use relative.rating))
 
 ;; Elo Rating (based on 1500 average)
 ;;
@@ -44,7 +43,6 @@
   (+ rating (* k-factor (- actual expected))))
 
 (defprotocol IEloPlayer
-  (rating [_])
   (update! [_ rating]))
 
 (defrecord EloPlayer [id rating-atom]

@@ -19,7 +19,7 @@
   [sigma]
   (/ 1 (variance sigma)))
 
-(defn normal-value
+(defn pdf
   "Normal probability density function:
 
   The value of a normal distribution at a given point x, with the distribution
@@ -30,25 +30,54 @@
     (* (/ 1 (* sigma (Math/sqrt (* 2 Math/PI))))
        (Math/pow Math/E exp))))
 
-(defn cumulative-dist
-  "Approximation of the cumulative distribution function when -1 < t < 1
-  given a normal distribution with the given precision."
-  [t precision]
-  {:pre [(> t -1) (> 1 t)]}
-  (+ 1/2 (/ t (Math/sqrt (* 2 precision)))))
+(defn error-fn
+  "Approximation of the error function."
+  [x]
+  (let [p 0.3275911
+        a [0.254829592
+           -0.284496736
+           1.421413741
+           -1.453152027
+           1.061405429]
+        t (/ 1 (+ 1 (* p x)))]
+    (- 1 (* (reduce + (map-indexed #(* %2 (Math/pow t (inc %1))) a))
+            (Math/pow Math/E (- (Math/pow x 2)))))))
+
+(defn cdf
+  [x mu sigma]
+  (let [xp (/ (- x mu) (* sigma (Math/sqrt 2)))]
+    (* 1/2 (+ 1 (if (> x 0)
+                  (error-fn xp)
+                  (- (error-fn (- xp))))))))
+
+;; (defn cumulative-dist
+;;   "Approximation of the cumulative distribution function when -1 < t < 1
+;;   given a normal distribution with the given precision."
+;;   [t]
+;;   (+ 1/2 (/ t (Math/sqrt (* 2 (Math/PI))))))
 
 (defprotocol ITrueSkillPlayer
-  (mu [_] "Average expected skill/rating of a player.")
-  (sigma [_] "Standard deviation in skill of a player")
-  (v [_ t e] "Mean Additive Truncated Gaussian Function."))
+  (mu [_]
+    "Average expected skill/rating of a player.")
+
+  (sigma [_]
+    "Standard deviation in skill of a player")
+
+  (v [_ t e]
+    "Mean Additive Truncated Gaussian Function."))
 
 (defrecord TrueSkillPlayer [id mu-atom sigma-atom]
   ITrueSkillPlayer
   (mu [_] @mu-atom)
+
   (sigma [_] @sigma-atom)
+
   (v [_ t e]
-    (/ (normal-value (- t e) @mu-atom @sigma-atom)
-       (cumulative-dist (- t e) (precision @sigma-atom)))))
+    (/ (pdf (- t e) @mu-atom @sigma-atom)
+       (cdf (- t e) @mu-atom @sigma-atom)))
+
+  IRelativeRatedPlayer
+  (rating [_] (- @mu-atom (* 3 @sigma-atom))))
 
 (defprotocol ITrueSkillEngine
   (beta-sq [_]
@@ -65,33 +94,34 @@
   (mu-additive-factors [_ winner loser]
     "Returns a pair of mu additive factors corresponding to the winner and loser."))
 
-(deftype TrueSkillEngine [sigma mu draw]
+(deftype TrueSkillEngine [init-sigma init-mu draw]
   ITrueSkillEngine
   (beta-sq [_]
-    (Math/pow (/ sigma 2) 2))
+    (Math/pow (/ init-sigma 2) 2))
 
   (tau-sq [_]
-    (Math/pow (/ sigma 100) 2))
+    (Math/pow (/ init-sigma 100) 2))
 
   (c-value [this s1 s2]
     (Math/sqrt (+ (* 2 (beta-sq this))
                   (variance s1)
                   (variance s2))))
 
+  ;; Clearly broken
   (mu-additive-factors [this winner loser]
     (let [c (c-value this (sigma winner) (sigma loser))
-          normalized-sigma (fn [sigma]
-                             (/ (variance sigma) c))
-          t-val (/ (- (mu winner) (mu loser)) c)
-          e-val (/ draw c)
-          m-winner (v winner t-val e-val)
-          m-loser (v loser t-val e-val)]
-      [(* (normalized-sigma (sigma winner)) m-winner)
-       (* (normalized-sigma (sigma loser)) m-loser)]))
+          t (/ (- (mu winner) (mu loser)) c)
+          e (/ draw c)
+          m-winner (v winner t e)
+          m-loser (v loser t e)
+          normalized-variance (fn [s]
+                             (/ (variance s) c))]
+      [(* (normalized-variance (sigma winner)) m-winner)
+       (* (normalized-variance (sigma loser)) m-loser)]))
 
   IRelativeRatingEngine
   (map->player [_ {:keys [id seed opts]}]
-    (->TrueSkillPlayer id (atom (or seed mu)) (atom (or (:sigma opts) sigma)))))
+    (->TrueSkillPlayer id (atom (or seed init-mu)) (atom (or (:sigma opts) init-sigma)))))
 
 (defn trueskill-engine
   "Accepts optional keyword arguments to specify an initial sigma spread,
@@ -99,4 +129,4 @@
 
   Defaults to (trueskill-engine :sigma 25/3 :mu 25 :draw 0)"
   [& {:keys [sigma mu draw]}]
-  (->TrueSkillEngine (or sigma 25/3) (or mu 25) (or draw 0)))
+  (->TrueSkillEngine (or sigma 25/3) (or mu 25) (or draw 4)))
