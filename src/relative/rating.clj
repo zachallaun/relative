@@ -1,17 +1,13 @@
 (ns relative.rating)
 
 (defprotocol IRelativeRatingEngine
-  (map->player [_ player-map]
-    "Should return some kind data object representing a Player.
-    player-map keys:
+  (player [_ map]
+    "Should return some kind data object representing a player for
+    this particular engine.")
 
-    id:   (required) A unique identifier for the player.
-    seed: (optional) A seed rating for the player.
-    opts: (optional) A map of options.")
-
-  (match! [_ winner loser] [_ winner loser draw?]
-    "winner and loser should be Player data objects, and match!
-    should update some sort of rating state to reflect the outcome.")
+  (match [_ winner loser] [_ winner loser draw?]
+    "Should return a pair of Player data objects, representing the
+    updated ratings for the winner and loser.")
 
   (serialize [_ entities]
     "Should return a serialized string representation of Player

@@ -28,7 +28,7 @@
   [rating]
   (Math/pow 10 (/ rating 400)))
 
-(defn e
+(defn expected
   "Returns the expected score of player with rating1 against player
   with rating2."
   [rating1 rating2]
@@ -36,74 +36,51 @@
         q2 (q rating2)]
     (/ q1 (+ q1 q2))))
 
-(defn r
+(defn rating-given
   "Returns a new rating given an old rating, an actual score,
   an expected score, and a k-factor."
   [rating actual expected k-factor]
   (+ rating (* k-factor (- actual expected))))
 
-(defprotocol IEloPlayer
-  (update! [_ rating]))
-
-(defrecord EloPlayer [id rating-atom]
-  IEloPlayer
-  (update! [_ rating] (reset! rating-atom rating))
-
+(extend-type clojure.lang.PersistentHashMap
   IRelativeRatedPlayer
-  (rating [_] @rating-atom))
+  (rating [m] (:rating m)))
 
-(defn player
-  "Returns a new EloPlayer with a default rating of 1500."
-  ([name] (player name 1500))
-  ([name default] (->EloPlayer name (atom default))))
+(defn -match
+  "Accepts two maps representing Elo players, and returns a pair of
+  similar maps with updated :rating keys based on the outcome.
 
-(defn -map->player
-  "Accepts a map and returns an EloPlayer. Accepted keys:
-
-  id:   (required) The unique identifier of the player.
-  seed: (optional) The seed rating of the player. Defaults to 1500."
-  [{:keys [id seed]}]
-  (player id (or seed 1500)))
-
-(defn -match!
-  "Accepts two EloPlayers and updates their Elo ratings based
-  on the result of the match.
-
-  winner and loser must be EloPlayers.
-  draw? is a boolean indicating whether or not the match was a tie.
-  k is the k-factor representing the maximum possible change in rating."
+  `draw?` is a boolean indicating whether or not the match was a tie.
+  `k` is the k-factor representing the maximum possible change in rating."
   [winner loser draw? k]
-  (let [r-winner (rating winner)
-        r-loser (rating loser)
-        e-winner (e r-winner r-loser)
-        e-loser (e r-loser r-winner)]
+  (let [est-winner (expected (rating winner) (rating loser))
+        est-loser (expected (rating loser) (rating winner))
+        update (fn [player actual estimate]
+                 (merge player
+                        {:rating (rating-given (rating player) actual estimate k)}))]
     (if draw?
-      (do (update! winner (r r-winner 0.5 e-winner k))
-          (update! loser (r r-loser 0.5 e-loser k)))
-      (do (update! winner (r r-winner 1 e-winner k))
-          (update! loser (r r-loser 0 e-loser k))))
-    [(rating winner) (rating loser)]))
+      [(update winner 0.5 est-winner)
+       (update loser 0.5 est-loser)]
+      [(update winner 1 est-winner)
+       (update loser 0 est-loser)])))
 
 (deftype EloEngine [k-factor]
   IRelativeRatingEngine
-  (map->player [_ player-map]
-    (-map->player player-map))
+  ;; map should contain an :id and optional seed :rating
+  (player [_ map]
+    (merge (hash-map :rating 1500) map))
 
-  (match! [_ winner loser]
-    (-match! winner loser false k-factor))
-  (match! [_ winner loser draw?]
-    (-match! winner loser draw? k-factor))
+  (match [_ winner loser]
+    (-match winner loser false k-factor))
+
+  (match [_ winner loser draw?]
+    (-match winner loser draw? k-factor))
 
   (serialize [_ entities]
-    (->> entities
-         (map (fn [e] {:id (:id e) :seed (rating e)}))
-         vec
-         prn-str))
+    (prn-str (vec entities)))
 
-  (resurrect [engine serialized]
-    (->> serialized
-         read-string
-         (map -map->player))))
+  (resurrect [this serialized]
+    (map (partial player this) (read-string serialized))))
 
 (defn elo-engine
   ([] (elo-engine 32))

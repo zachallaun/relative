@@ -81,7 +81,9 @@
      (cdf (- t e) 0 1)))
 
 (defn gauss-stdd-mult
-  "Gaussian Variance Multiplicative Function. Note that this function operates on a std dev not a variance as described in the Trueskill math paper."
+  "Gaussian Variance Multiplicative Function. Note that this
+  function operates on a std dev not a variance as described
+  in the Trueskill math paper."
   [t e]
   (let [multiplier (gauss-mean-mult t e)]
     (* multiplier (+ multiplier t (- e)))))
@@ -91,23 +93,15 @@
     "Average expected skill/rating of a player.")
 
   (stdd [_]
-    "Standard deviation in skill of a player")
+    "Standard deviation in skill of a player"))
 
-  (update! [_ mean stdd]
-    "Updates the players skill and confidence after a match."))
-
-(defrecord TrueSkillPlayer [id mean-atom stdd-atom]
+(extend-type clojure.lang.PersistentHashMap
   ITrueSkillPlayer
-  (mean [_] @mean-atom)
-
-  (stdd [_] @stdd-atom)
-
-  (update! [_ mean stdd]
-    (reset! mean-atom mean)
-    (reset! stdd-atom stdd))
+  (mean [m] (:mean m))
+  (stdd [m] (:stdd m))
 
   IRelativeRatedPlayer
-  (rating [_] (- @mean-atom (* 3 @stdd-atom))))
+  (rating [m] (- (:mean m) (* 3 (:stdd m)))))
 
 (defprotocol ITrueSkillEngine
   (beta-sq [_]
@@ -168,21 +162,22 @@
        (- 1 (* (normalized-variance (stdd loser)) multiplier))]))
 
   IRelativeRatingEngine
-  (map->player [_ {:keys [id seed opts]}]
-    (->TrueSkillPlayer id
-                       (atom (or seed init-mean))
-                       (atom (or (:stdd opts) init-stdd))))
-  (match! [this winner loser]
-    (match! this winner loser false))
-  (match! [this winner loser draw?]
-    (let [[wmean lmean] (mean-additive-factors this winner loser)
-          [wvar lvar] (variance-mult-factors this winner loser)]
-      (update! winner (+ (mean winner) wmean) (Math/sqrt (* (variance (stdd winner))
-                                                            wvar)))
+  ;; map should contain :id and optional :mean and :stdd
+  (player [_ map]
+    (merge (hash-map :mean 25 :stdd 25/3) map))
 
-      (update! loser (- (mean loser) lmean) (Math/sqrt (* (variance (stdd loser))
-                                                          lvar)))
-      [(rating winner) (rating loser)])))
+  (match [this winner loser]
+    (match this winner loser false))
+
+  (match [this winner loser draw?]
+    (let [[wmean lmean] (mean-additive-factors this winner loser)
+          [wvar lvar] (variance-mult-factors this winner loser)
+          update (fn [player mdiff vdiff]
+                   (merge player {:mean (+ (mean winner) mdiff)
+                                  :stdd (Math/sqrt (* (variance (stdd winner))
+                                                      vdiff))}))]
+      [(update winner wmean wvar)
+       (update loser (- lmean) lvar)])))
 
 (defn trueskill-engine
   "Accepts optional keyword arguments to specify an initial stdd,
