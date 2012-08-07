@@ -1,6 +1,10 @@
 # Relative
 
-Relative is a Clojure library that supports relative rating systems such as Elo or Glicko. (Currently only the Elo rating system is implemented.)
+*Relative is a Clojure library supporting relative rating systems such as Elo or TrueSkill.*
+
+```clj
+[relative "0.1.0"]
+```
 
 ### Basic Use
 
