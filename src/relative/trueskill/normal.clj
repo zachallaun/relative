@@ -47,7 +47,7 @@
   (precision [this]
     (precision std-dev))
   (precision-mean [this]
-    (* (mean this) (precision this)))
+    (* mean (precision std-dev)))
   (pdf [this x]
     (normal-pdf mean std-dev x))
   (cdf [this x]
