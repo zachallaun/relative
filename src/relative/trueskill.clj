@@ -33,23 +33,25 @@
 
 (defprotocol ITrueSkillEngine
   (beta-sq [_]
-    "Variance of performance around the skill of each player. Determined
-    by the initial std-dev spread.")
+    "Variance of performance around the skill of each player. Determined by the
+    initial std-dev spread.")
 
   (tau-sq [_]
     "Additive dynamics factor. Determined by the initial std-dev spread.")
 
-  (c-value [_ s1 s2]
-    "Normalizing value. Determined by the performance variance of the
+  (uncertainty [_ s1 s2]
+    "A normalizing value. Determined by the performance variance of the
     system (beta-sq), and the std-dev spread of both players going into a match.")
 
   (mean-additive-factors [_ winner loser]
     "Returns a pair of mean additive factors corresponding to the winner and loser.")
 
-  (draw-margin [this prob]
-    "Returns a draw margin from an input draw probability.")
+  (variance-mult-factors [_ winner loser]
+    "Returns a pair of variance multiplicative factors corresponding to the winner
+    and loser.")
 
-  (variance-mult-factors [_ winner loser]))
+  (draw-margin [this prob]
+    "Returns a draw margin from an input draw probability."))
 
 (deftype TrueSkillEngine [init-std-dev init-mean prob]
   ITrueSkillEngine
@@ -59,7 +61,7 @@
   (tau-sq [_]
     (Math/pow (/ init-std-dev 100) 2))
 
-  (c-value [this p1 p2]
+  (uncertainty [this p1 p2]
     (Math/sqrt (+ (* 2 (beta-sq this))
                   (variance p1)
                   (variance p2))))
@@ -69,23 +71,26 @@
        (Math/sqrt (beta-sq this))
        (icdf (normal-distribution) (/ (inc prob) 2))))
 
+  ;; TODO: Remove redundency in let statement for following two fns
   (mean-additive-factors [this winner loser]
-    (let [c (c-value this winner loser)
+    (let [c (uncertainty this winner loser)
           t (/ (- (mean winner) (mean loser)) c)
           e (/ (draw-margin this prob) c)
           multiplier (gauss-mean-mult t e)
-          normalized-variance #(/ (variance %) c)]
-      [(* (normalized-variance winner) multiplier)
-       (* (normalized-variance loser) multiplier)]))
+          normalized-variance #(/ (variance %) c)
+          mean-add-for #(* (normalized-variance %) multiplier)]
+      [(mean-add-for winner)
+       (mean-add-for loser)]))
 
   (variance-mult-factors [this winner loser]
-    (let [c (c-value this winner loser)
+    (let [c (uncertainty this winner loser)
           t (/ (- (mean winner) (mean loser)) c)
           e (/ (draw-margin this prob) c)
           multiplier (gauss-std-dev-mult t e)
-          normalized-variance #(/ (variance %) (Math/pow c 2))]
-      [(- 1 (* (normalized-variance winner) multiplier))
-       (- 1 (* (normalized-variance loser) multiplier))]))
+          normalized-variance #(/ (variance %) (Math/pow c 2))
+          variance-mult-for #(- 1 (* (normalized-variance %) multiplier))]
+      [(variance-mult-for winner)
+       (variance-mult-for loser)]))
 
   IRelativeRatingEngine
   ;; map should contain :id and optional :mean and :std-dev
