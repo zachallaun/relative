@@ -106,8 +106,8 @@
           [wvar lvar] (variance-mult-factors this winner loser)
           update (fn [player mdiff vdiff]
                    (-> (normal-distribution)
-                       (with-mean (+ (mean winner) mdiff))
-                       (with-variance (* (variance winner) vdiff))))]
+                       (with-mean (+ (mean player) mdiff))
+                       (with-variance (* (variance player) vdiff))))]
       [(update winner wmean wvar)
        (update loser (- lmean) lvar)])))
 
