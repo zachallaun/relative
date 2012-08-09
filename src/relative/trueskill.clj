@@ -109,7 +109,13 @@
                        (with-mean (+ (mean player) mdiff))
                        (with-variance (* (variance player) vdiff))))]
       [(update winner wmean wvar)
-       (update loser (- lmean) lvar)])))
+       (update loser (- lmean) lvar)]))
+
+  (serialize [_ entities]
+    (prn-str (vec entities)))
+
+  (resurrect [_ serialized]
+    (vec (read-string serialized))))
 
 (defn trueskill-engine
   "Accepts optional keyword arguments to specify an initial std-dev,

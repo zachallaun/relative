@@ -3,10 +3,40 @@
 *Relative is a Clojure library supporting relative rating systems such as Elo or TrueSkill.*
 
 ```clj
-[relative "0.1.0"]
+[relative "0.1.1"]
 ```
 
-### Basic Use
+### Use
+
+Relative currently supports two rating engines: Elo (`relative.elo/elo-engine`) and TrueSkill (`relative.trueskill/trueskill-engine`).
+
+Both engines implement the same protocol, `IRelativeRatingEngine`, and support the following functions:
+
+#### `player`
+
+Arguments: [engine map]
+
+Creates a player data structure that implements `IRelativelyRatedPlayer`. A call to `rating` should return that player's current rating.
+
+#### `match`
+
+Arguments: [engine winner loser]
+
+Represents a match played against two players, and returns a vector pair of updated players given the outcome of the match.
+
+#### `serialize`
+
+Arguments: [engine entities]
+
+Serializes a sequence of player entities into a string representation that could be stored.
+
+#### `resurrect`
+
+Arguments: [engine serialized]
+
+Returns a sequence of player entities based on the serialized form.
+
+### Example
 
 ```clj
 (ns elo-example
@@ -30,5 +60,5 @@
 
 ;; player2 wins the second match.
 (match elo-engine player2 player1) ;; => [{:id "James" :rating 1501.4695}
-                                    ;;     {:id "Zach" :rating 1498.5305}]
+                                   ;;     {:id "Zach" :rating 1498.5305}]
 ```
