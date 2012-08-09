@@ -12,27 +12,19 @@ Relative currently supports two rating engines: Elo (`relative.elo/elo-engine`) 
 
 Both engines implement the same protocol, `IRelativeRatingEngine`, and support the following functions:
 
-#### `player`
-
-Arguments: [engine map]
+#### `(player [engine map])`
 
 Creates a player data structure that implements `IRelativelyRatedPlayer`. A call to `rating` should return that player's current rating.
 
-#### `match`
-
-Arguments: [engine winner loser]
+#### `(match [engine winner loser])`
 
 Represents a match played against two players, and returns a vector pair of updated players given the outcome of the match.
 
-#### `serialize`
-
-Arguments: [engine entities]
+#### `(serialize [engine entities])`
 
 Serializes a sequence of player entities into a string representation that could be stored.
 
-#### `resurrect`
-
-Arguments: [engine serialized]
+#### `(resurrect [engine serialized])`
 
 Returns a sequence of player entities based on the serialized form.
 
