@@ -1,24 +1,24 @@
 (ns relative.rating)
 
 (defprotocol IRelativeRatingEngine
-  (player [_ map]
+  (player [engine map]
     "Should return some kind data object representing a player for
     this particular engine.")
 
-  (match [_ winner loser] [_ winner loser draw?]
+  (match [engine winner loser] [engine winner loser draw?]
     "Should return a pair of Player data objects, representing the
     updated ratings for the winner and loser.")
 
-  (match-quality [_ p1 p2]
+  (match-quality [engine p1 p2]
     "Returns a match quality score given two players.")
 
-  (serialize [_ entities]
+  (serialize [engine entities]
     "Should return a serialized string representation of Player
     entities that could be persisted.")
 
-  (resurrect [_ serialized]
+  (resurrect [engine serialized]
     "Should return a collection of Player entities generated from
     the serialized representation."))
 
 (defprotocol IRelativeRatedPlayer
-  (rating [_] "Should return the current rating of the player."))
+  (rating [player] "Should return the current rating of the player."))
