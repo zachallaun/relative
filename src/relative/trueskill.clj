@@ -111,6 +111,16 @@
       [(update winner wmean wvar)
        (update loser (- lmean) lvar)]))
 
+  (match-quality [this p1 p2]
+    (let [bsq (beta-sq this)
+          variance1 (variance p1)
+          variance2 (variance p2)]
+      (* (Math/sqrt (/ (* 2 bsq)
+                       (+ (* 2 bsq) variance1 variance2)))
+         (Math/pow Math/E
+                   (- (/ (Math/pow (- (mean p1) (mean p2)) 2)
+                         (* 2 (+ (* 2 bsq) variance1 variance2))))))))
+
   (serialize [_ entities]
     (prn-str (vec entities)))
 

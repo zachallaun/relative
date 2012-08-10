@@ -22,7 +22,7 @@ Represents a match played against two players, and returns a vector pair of upda
 
 #### `(match-quality [engine p1 p2])`
 
-This returns a match quality score given a hypothetical match between two players. A high quality match is considered to be a match where there is a high likelihood of a draw. (Note: not currently implemented for TrueSkill.)
+This returns a match quality score given a hypothetical match between two players. A high quality match is considered to be a match where there is a high likelihood of a draw.
 
 #### `(serialize [engine entities])`
 

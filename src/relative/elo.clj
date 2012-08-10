@@ -81,5 +81,7 @@
     (map (partial player this) (read-string serialized))))
 
 (defn elo-engine
+  "Returns an EloEngine. Optional argument `k-factor` defaults to 32, and is
+  the maximum possible change in rating from a match."
   ([] (elo-engine 32))
   ([k-factor] (->EloEngine k-factor)))
