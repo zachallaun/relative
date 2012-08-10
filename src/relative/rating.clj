@@ -9,6 +9,9 @@
     "Should return a pair of Player data objects, representing the
     updated ratings for the winner and loser.")
 
+  (match-quality [_ p1 p2]
+    "Returns a match quality score given two players.")
+
   (serialize [_ entities]
     "Should return a serialized string representation of Player
     entities that could be persisted.")
