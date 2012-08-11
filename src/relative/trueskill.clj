@@ -20,8 +20,7 @@
      (cdf (normal-distribution) (- t e))))
 
 (defn gauss-std-dev-mult
-  "Gaussian Variance Multiplicative Function. Note that this function operates
-  on a std dev not a variance as described in the Trueskill math paper."
+  "Gaussian Variance Multiplicative Function."
   [t e]
   (let [multiplier (gauss-mean-mult t e)]
     (* multiplier (+ multiplier t (- e)))))
@@ -93,6 +92,8 @@
        (variance-mult-for loser)]))
 
   IRelativeRatingEngine
+  ;; TODO: Don't care about id, instead just pull out the mean and std-dev,
+  ;;       and merge the newly created normal-dist with the given map.
   ;; map should contain :id and optional :mean and :std-dev
   (player [_ {:keys [id mean std-dev]}]
     (-> (normal-distribution (or mean 25) (or std-dev 25/3))
@@ -104,11 +105,11 @@
   (match [this winner loser draw?]
     (let [[wmean lmean] (mean-additive-factors this winner loser)
           [wvar lvar] (variance-mult-factors this winner loser)
-          update (fn [player mdiff vdiff]
+          update (fn [player mdiff vmult]
                    (merge player
                           (-> (normal-distribution)
                               (with-mean (+ (mean player) mdiff))
-                              (with-variance (* (variance player) vdiff)))))]
+                              (with-variance (* (variance player) vmult)))))]
       [(update winner wmean wvar)
        (update loser (- lmean) lvar)]))
 

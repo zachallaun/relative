@@ -3,7 +3,7 @@
 *Relative is a Clojure library supporting relative rating systems such as Elo or TrueSkill.*
 
 ```clj
-[relative "0.1.1"]
+[relative "0.1.2"]
 ```
 
 ### Use
